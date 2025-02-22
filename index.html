@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>إضافة صورة مع إمكانية التعديل والتنزيل</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            background-color: #f4f4f4;
+            padding: 20px;
+        }
+        h1 {
+            color: #333;
+        }
+        canvas {
+            max-width: 100%; /* لجعل Canvas يتناسب مع عرض الشاشة */
+            height: auto; /* الحفاظ على نسبة العرض إلى الارتفاع */
+            border: 1px solid #ccc;
+            margin-top: 20px;
+        }
+        input[type="file"] {
+            margin: 10px 0;
+        }
+        button {
+            margin-top: 20px;
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+    </style>
+</head>
+<body>
+    <h1>أضف صورة مع إمكانية التعديل والتنزيل</h1>
+    <input type="file" id="imageUpload" accept="image/*">
+    <br><br>
+    <canvas id="canvas"></canvas>
+    <br>
+    <button id="downloadBtn">تنزيل الصورة النهائية</button>
+
+    <!-- إضافة مكتبة Fabric.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/fabric.js/5.2.4/fabric.min.js"></script>
+    <script>
+        // تهيئة Canvas باستخدام Fabric.js
+        const canvas = new fabric.Canvas('canvas');
+
+        // الصورة الإضافية (الإطار)
+        let overlayImage;
+
+        // تحميل الصورة الإضافية
+        fabric.Image.fromURL('12.png', function(img) {
+            overlayImage = img;
+            overlayImage.set({
+                left: 100, // الموضع الأفقي الابتدائي
+                top: 100,  // الموضع الرأسي الابتدائي
+                scaleX: 0.5, // الحجم الابتدائي (عرض)
+                scaleY: 0.5, // الحجم الابتدائي (ارتفاع)
+                selectable: true, // يمكن تحديدها وسحبها
+                hasControls: true, // إظهار أدوات التحكم (لتكبير/تصغير الصورة)
+            });
+        });
+
+        // عند رفع الصورة الرئيسية
+        document.getElementById('imageUpload').addEventListener('change', function(event) {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    fabric.Image.fromURL(e.target.result, function(img) {
+                        const maxWidth = 800; // أقصى عرض مسموح
+                        const maxHeight = 600; // أقصى ارتفاع مسموح
+                        let width = img.width;
+                        let height = img.height;
+
+                        // تحجيم الصورة إذا كانت أكبر من الأبعاد المسموحة
+                        if (width > maxWidth || height > maxHeight) {
+                            const ratio = Math.min(maxWidth / width, maxHeight / height);
+                            width *= ratio;
+                            height *= ratio;
+                        }
+
+                        canvas.setWidth(width);  // ضبط عرض Canvas
+                        canvas.setHeight(height); // ضبط ارتفاع Canvas
+                        img.scaleToWidth(width); // تحجيم الصورة
+                        canvas.add(img); // إضافة الصورة الرئيسية
+                        canvas.sendToBack(img); // إرسال الصورة الرئيسية إلى الخلف
+
+                        // إضافة الصورة الإضافية
+                        if (overlayImage) {
+                            canvas.add(overlayImage); // إضافة الصورة الإضافية
+                            overlayImage.bringToFront(); // إحضار الصورة الإضافية إلى الأمام
+                        }
+                    });
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+
+        // زر التنزيل
+        document.getElementById('downloadBtn').addEventListener('click', function() {
+            if (canvas.isEmpty()) {
+                alert('يرجى رفع صورة أولاً!');
+                return;
+            }
+
+            // تحويل Canvas إلى صورة
+            const dataURL = canvas.toDataURL({
+                format: 'png', // تنسيق الصورة
+                quality: 1     // جودة الصورة (1 = الأفضل)
+            });
+
+            // إنشاء رابط تنزيل
+            const link = document.createElement('a');
+            link.href = dataURL;
+            link.download = 'final-image.png'; // اسم الملف الافتراضي
+            document.body.appendChild(link); // إضافة الرابط إلى DOM
+            link.click(); // تنزيل الصورة
+            document.body.removeChild(link); // إزالة الرابط من DOM
+        });
+    </script>
+</body>
+</html>
